@@ -2,7 +2,7 @@ This resource pack simplifies the Spyglass overlay
 
 ***
 
-Ignore the pack version warning, it should work for all Minecraft versions
+This pack should work for all Minecraft versions, disregard the pack version warning
 
 ***
 
