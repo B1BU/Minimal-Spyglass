@@ -1,6 +1,9 @@
 {
 	"pack": {
 		"pack_format": 2147483647,
-		"description": ["Minimalist spyglass overlay\n(Ignore warning)", " | ", {"text": "B1BU","color": "#ACCC00"}]
+		"description": [
+			"Minimalist spyglass overlay (Ignore warning)",
+			{"translate": " | %s", "with": [{"text": "B1BU","color": "#ACCC00"}]}
+		]
 	}
 }
