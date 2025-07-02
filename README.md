@@ -1,8 +1,6 @@
-This resource pack simplifies the Spyglass overlay
+This resource pack replaces the vanilla Spyglass overlay with a more minimalistic one, reducing distractions
 
-***
-
-This pack should work for all Minecraft versions, disregard the pack version warning
+Please disregard the resource pack version warning, it should work for all Minecraft versions
 
 ***
 
