@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '\d+\.\d+\.\d+' # Matches tags like 1.0.0
+      - '\d+\.\d+\.\d+.*' # Matches tags like 1.0.0(...)
 
 permissions:
   contents: write
