@@ -1,6 +1,6 @@
 ## [1.0.3]
 - Properly defined supported versions so warning only shows up for versions prior to snapshot 20w45a (When Spyglasses were added)
-- Changed description a bit
+- Changed description
 
 ## [1.0.2]
 - Updated pack.mcmeta
