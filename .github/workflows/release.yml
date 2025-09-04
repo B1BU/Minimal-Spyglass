@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - '\d+\.\d+\.\d+.*' # Matches tags like 1.0.0(...)
+      - '[0-9]+.[0-9]+.[0-9]+*' # Matches tags like 1.0.0 or 1.0.0-alpha
 
 permissions:
   contents: write
@@ -13,8 +13,26 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Input
       PROJECT_NAME: Minimal Spyglass
+
       MODRINTH_ID: 9OteWkCS
+
+      LOADERS: minecraft
+
+      GAME_VERSION_FILTER: releases
+      GAME_VERSIONS: |
+        [1.17,]
+
+      DEPENDENCIES: ''
+
+      # Default values
+      VERSION: ""
+      VERSION_TYPE: ""
+      RELEASE_NAME: ""
+      SOURCE_RESOURCEPACK_FOLDER: ""
+      OUTPUT_RESOURCEPACK_FILE_GITHUB: ""
+      OUTPUT_RESOURCEPACK_FILE_MODRINTH: ""
 
     steps:
       - name: Checkout code
@@ -26,20 +44,37 @@ jobs:
 
           VERSION="$TAG"
 
+          # Detect version type
+          if [[ "$VERSION" == *-b ]] || [[ "$VERSION" == *-beta ]]; then
+            VERSION_TYPE="beta"
+          elif [[ "$VERSION" == *-a ]] || [[ "$VERSION" == *-alpha ]]; then
+            VERSION_TYPE="alpha"
+          else
+            # Extract the first number before the first dot
+            major_number="${VERSION%%.*}"
+
+            if [[ "$major_number" == "0" ]]; then
+              VERSION_TYPE="alpha"
+            else
+              VERSION_TYPE="release"
+            fi
+          fi
+
           RELEASE_NAME="$PROJECT_NAME $VERSION"
 
-          SOURCE_FOLDER="src/$PROJECT_NAME"
+          SOURCE_RESOURCEPACK_FOLDER="src/$PROJECT_NAME"
 
-          OUTPUT_FILE_BASENAME="$PROJECT_NAME v$VERSION"
-          OUTPUT_FILE_MODRINTH="$OUTPUT_FILE_BASENAME.zip"
-          OUTPUT_FILE_GITHUB="${OUTPUT_FILE_BASENAME// /-}.zip"
+          OUTPUT_RESOURCEPACK_FILE_BASENAME="$PROJECT_NAME v$VERSION"
+          OUTPUT_RESOURCEPACK_FILE_GITHUB="${OUTPUT_RESOURCEPACK_FILE_BASENAME// /-}.zip"
+          OUTPUT_RESOURCEPACK_FILE_MODRINTH="$OUTPUT_RESOURCEPACK_FILE_BASENAME.zip"
 
           # Export variables
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "VERSION_TYPE=$VERSION_TYPE" >> "$GITHUB_ENV"
           echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
-          echo "SOURCE_FOLDER=$SOURCE_FOLDER" >> "$GITHUB_ENV"
-          echo "OUTPUT_FILE_MODRINTH=$OUTPUT_FILE_MODRINTH" >> "$GITHUB_ENV"
-          echo "OUTPUT_FILE_GITHUB=$OUTPUT_FILE_GITHUB" >> "$GITHUB_ENV"
+          echo "SOURCE_RESOURCEPACK_FOLDER=$SOURCE_RESOURCEPACK_FOLDER" >> "$GITHUB_ENV"
+          echo "OUTPUT_RESOURCEPACK_FILE_GITHUB=$OUTPUT_RESOURCEPACK_FILE_GITHUB" >> "$GITHUB_ENV"
+          echo "OUTPUT_RESOURCEPACK_FILE_MODRINTH=$OUTPUT_RESOURCEPACK_FILE_MODRINTH" >> "$GITHUB_ENV"
 
       - name: Extract Changelog
         # Matches "## [1.0.0]\n..."
@@ -59,12 +94,12 @@ jobs:
           echo "$changelog" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: Zip Source Folder
-        working-directory: ${{ env.SOURCE_FOLDER }}
+      - name: Package Resource Pack
+        working-directory: ${{ env.SOURCE_RESOURCEPACK_FOLDER }}
         run: |
           zip -r "output.zip" ./*
-          cp "output.zip" "$GITHUB_WORKSPACE/${{ env.OUTPUT_FILE_MODRINTH }}"
-          cp "output.zip" "$GITHUB_WORKSPACE/${{ env.OUTPUT_FILE_GITHUB }}"
+          cp "output.zip" "$GITHUB_WORKSPACE/${{ env.OUTPUT_RESOURCEPACK_FILE_GITHUB }}"
+          cp "output.zip" "$GITHUB_WORKSPACE/${{ env.OUTPUT_RESOURCEPACK_FILE_MODRINTH }}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -73,22 +108,25 @@ jobs:
         with:
           name: ${{ env.RELEASE_NAME }}
           body: ${{ steps.changelog.outputs.log }}
-          files: ${{ env.OUTPUT_FILE_GITHUB }}
+          files: |
+            ${{ env.OUTPUT_RESOURCEPACK_FILE_GITHUB }}
 
       - name: Create Modrinth Release
         uses: Kir-Antipov/mc-publish@v3.3
         with:
+          loaders:  ${{ env.LOADERS }}
+          version-type:  ${{ env.VERSION_TYPE }}
+          dependencies: ${{ env.DEPENDENCIES }}
+
+          name: ${{ env.RELEASE_NAME }}
+          version: ${{ env.VERSION }}
+          changelog: ${{ steps.changelog.outputs.log }}
+
+          game-version-filter: ${{ env.GAME_VERSION_FILTER }}
+          game-versions: ${{ env.GAME_VERSIONS }}
+
           modrinth-id: ${{ env.MODRINTH_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
-          version: ${{ env.VERSION }}
-          name: ${{ env.RELEASE_NAME }}
-          changelog: ${{ steps.changelog.outputs.log }}
-          files: ${{ env.OUTPUT_FILE_MODRINTH }}
-
-          loaders: minecraft
-          version-type: release
-
-          game-version-filter: releases
-          game-versions: |
-            [1.17,]
+          modrinth-files: |
+            ${{ env.OUTPUT_RESOURCEPACK_FILE_MODRINTH }}
